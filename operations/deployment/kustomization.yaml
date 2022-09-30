@@ -1,0 +1,12 @@
+commonLabels:
+  group: ch.resrc.backend-experiments
+commonAnnotations:
+  author: RFS-0
+resources:
+  - database.yaml
+  - deno.yaml
+
+configMapGenerator:
+  - name: database-config
+    envs:
+      - database.env

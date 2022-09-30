@@ -1,0 +1,11 @@
+FROM denoland/deno:alpine-1.26.0
+EXPOSE 8000
+WORKDIR /deno
+# TODO: make user work
+#USER deno
+# NOTE: because of how the docker build context works, you have to execute the build from within ch.resrc.backend-experiments/deno
+COPY . .
+# Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
+# TODO: Ideally cache deps.ts will download and compile _all_ external files used in application.ts.
+RUN deno cache application.ts
+CMD ["run", "--allow-net", "--allow-env", "application.ts", "--port", "8000" ]

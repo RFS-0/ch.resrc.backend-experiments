@@ -1,0 +1,6 @@
+{
+  "disallowAdditionalPropertiesIfNotPresent": false,
+  "npmName": "ch.resrc.backend-experiments.api.typescript",
+  "supportsES6": true,
+  "platform": "deno"
+}

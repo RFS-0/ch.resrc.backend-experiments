@@ -1,0 +1,325 @@
+openapi: 3.0.2
+info:
+  title: API Specification for Backend Experiments
+  version: 1.0.15
+  description: |-
+      This is a specification against which various backends are implemented to get a feeling of how they differ.
+      For details on those experiments checkout the [GitHub repository](https://github.com/RFS-0/ch.resrc.backend-experiments).
+      This API specification is a modified version of the Swagger Petstore API which can be found [here](https://github.com/swagger-api/swagger-petstore/blob/60050eb609552d25829efde5ed8a9fe026acc00e/src/main/resources/openapi.yaml).
+      It is not really useful in and of itself. But it should be enough to get a basic idea on how different backend plattforms/language/framework combinations differ.
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+servers:
+  - url: http://localhost:8000/petstore
+    description: |-
+      Deno
+tags:
+  - name: "User Resource"
+    description: Operations for managing users
+  - name: "Authentication Resource"
+    description: Operations for authenticating users
+paths:
+  /user:
+    post:
+      tags:
+        - "User Resource"
+      summary: Create a user
+      description: |-
+        Creates the provided user. 
+        Checkout the schema for constraints.
+        The constraints are currently not validated for simplicity's sake.
+        No addtional constraints apply.
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+        description: Created user object
+      responses:
+        '201':
+          description: Successfully created the provided user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Otherwise
+  '/user/create-multiple':
+    post:
+      tags:
+        - "User Resource"
+      summary: Create multiple users
+      description: |-
+        Creates the provided users. 
+        Checkout the schema for constraints.
+        The constraints are currently not validated for simplicity's sake.
+        No addtional constraints apply.
+      operationId: createUsersWithListInput
+      responses:
+        '201':
+          description: Successfully created the provided users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreateUserRequest'
+        default:
+          description: successful operation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserResponse'
+  '/user/{id}':
+    put:
+      tags:
+        - "User Resource"
+      summary: Update user
+      description: |-
+        Updates the provided user. 
+        The id can not be updated.
+        Checkout the schema for constraints.
+        The constraints are currently not validated for simplicity's sake.
+        No addtional constraints apply.
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          description: The id of the user that should be updated
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Successfully updated the user
+        "400":
+          description: Otherwise
+      requestBody:
+        description: Update a user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+    delete:
+      tags:
+        - "User Resource"
+      summary: Delete user
+      description: |-
+        Deletes the provided user.
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          description: The id of the user to be deleted
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted the user
+        '400':
+          description: If something went wrong.
+  '/user/{username}':
+    get:
+      tags:
+        - "User Resource"
+      summary: Find a user by name
+      description: |-
+        Retrieves the user with the specified username.
+        Since uniqueness of these names is not validated the operation will return the first user with an exact macht for the provided username.
+        No addtional constraints apply.
+      operationId: getUserByName
+      parameters:
+        - name: username
+          in: path
+          description: 'The username of the user to be fetched'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: If something went wrong.
+  '/user/findAll':
+    get:
+      tags:
+        - "User Resource"
+      summary: Find all users
+      description: |-
+        Retrieves all users. 
+        No addtional constraints apply.
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: '#/components/schemas/CreateUserRequest'
+  /authentication:
+    post:
+      tags:
+        - "Authentication Resource"
+      summary: Authenticate a user
+      description: |-
+        Authenticates a user with the provided credentials. 
+        The authentication is valid for 2 hours.
+        The constraints are currently not validated for simplicity's sake.
+        No addtional constraints apply.
+      operationId: createAuthentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticationRequest'
+        description: Created user object
+      responses:
+        '201':
+          description: Successfully created the provided user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '400':
+          description: Otherwise
+    delete:
+      tags:
+        - "Authentication Resource"
+      summary: Revoke the authentication of a user
+      description: |-
+        Revoke an authentication. 
+        Checkout the schema for constraints.
+        The constraints are currently not validated for simplicity's sake.
+        No addtional constraints apply.
+      operationId: revokeAuthentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeAuthenticationRequest'
+        description: Created user object
+      responses:
+        '200':
+          description: Successfully revoked the authentication.
+        '400':
+          description: Otherwise
+components:
+  schemas:
+    CreateUserRequest:
+      properties:
+        username:
+          type: string
+          maxLength: 255
+          example: "some user name"
+        firstName:
+          type: string
+          maxLength: 255
+          example: Dino
+        lastName:
+          type: string
+          maxLength: 255
+          example: Saurier
+        email:
+          type: string
+          maxLength: 255
+          example: dino@saurier.com
+        password:
+          type: string
+          maxLength: 255
+          example: "this-is-not-very-secure"
+        phone:
+          type: string
+          maxLength: 50
+          example: "+12 456 78 90"
+    UpdateUserRequest:
+      properties:
+        username:
+          type: string
+          maxLength: 255
+          example: "some user name"
+        firstName:
+          type: string
+          maxLength: 255
+          example: Dino
+        lastName:
+          type: string
+          maxLength: 255
+          example: Saurier
+        email:
+          type: string
+          maxLength: 255
+          example: dino@saurier.com
+        password:
+          type: string
+          maxLength: 255
+          example: "this-is-not-very-secure"
+        phone:
+          type: string
+          maxLength: 50
+          example: "+12 456 78 90"
+    UserResponse:
+      properties:
+        id:
+          type: string
+          format: "uuid v4"
+          example: "de205207-7686-4cdc-b7ee-92003f5076bc"
+        username:
+          type: string
+          maxLength: 255
+          example: "some user name"
+        firstName:
+          type: string
+          maxLength: 255
+          example: Dino
+        lastName:
+          type: string
+          maxLength: 255
+          example: Saurier
+        email:
+          type: string
+          maxLength: 255
+          example: dino@saurier.com
+        password:
+          type: string
+          maxLength: 255
+          example: "this-is-not-very-secure"
+        phone:
+          type: string
+          maxLength: 50
+          example: "+12 456 78 90"
+    AuthenticationRequest:
+      properties:
+        userId:
+          type: string
+          format: "uuid v4"
+          example: "de205207-7686-4cdc-b7ee-92003f5076bc"
+        passowrd:
+          type: string
+          example: 'my-secret'
+    AuthenticationResponse:
+      properties:
+        token:
+          type: string
+          format: "uuid v4"
+          example: '53498849-4f89-46ab-a09e-eb0970639f53'
+        tokenExpiresAfter:
+          type: string
+          format: 'date-time'
+          example: "2020-04-12T23:20:50.52Z"
+    RevokeAuthenticationRequest:
+      properties:
+        token:
+          type: string
+          format: "uuid v4"

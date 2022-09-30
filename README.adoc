@@ -1,0 +1,241 @@
+= Backend Experiments
+
+The goal of this repository is compare platforms, languages and frameworks/libraries by implementing the same API on each of them.
+For each of them the following is implemented:
+
+* A REST-API conforming to the aforementioned API
+* Persistence with a SQL database (PostgreSQL)
+
+The same API is implemented in each experiment. See <<Petstore API>> for details.
+
+Currently an implementation is available in the following combinations of platforms, languages and frameworks:
+
+[cols="1,1,1"]
+|===
+
+|Platform
+|Language
+|Framework/Library
+
+|https://deno.land/[Deno]
+|Typescript
+|https://deno.land/x/oak@v11.1.0[x/oak], https://deno.land/x/postgres@v0.16.1[x/postgres]
+
+|===
+
+Candidates for future experiments are:
+
+[cols="1,1,1"]
+|===
+
+|https://go.dev/[Go]
+|Go
+|https://github.com/gin-gonic/gin[Gin]
+
+|JVM
+|Kotlin
+|Quarkus
+
+|JVM
+|Scala
+|
+
+|JVM
+|Clojure
+|
+
+|.NET
+|F#
+|
+|===
+
+All the implementations use the same structure:
+
+[plantuml, format=svg, opts="inline"]
+----
+root of experiment (e.g. deno)
+|_ adapters
+  |_ rest
+  |_ database
+|_ domain
+  |_ entities
+  |_ value_objects
+|_ use-cases
+  |_ manage_users
+----
+
+== API Specification
+
+The API is specified according to the https://swagger.io/specification/[OpenAPI Specification] (v3.0.3).
+This API can be found link:./api/api-spec.yaml[here]. 
+This API specification is a modified version of the Swagger Petstore API which can be found https://github.com/swagger-api/swagger-petstore/blob/60050eb609552d25829efde5ed8a9fe026acc00e/src/main/resources/openapi.yaml[here].
+
+To start the Swagger UI for the API specification of the petstore execute (TODO: repackage this as service in docker-compose):
+
+  docker run -p 4001:8080 -d --rm -e URL=/api-spec.yaml -v <absolute-path-to-repository>/ch.resrc.backend-experiments/api/api-spec.yaml:/usr/share/nginx/html/api-spec.yaml swaggerapi/swagger-ui
+
+To generate models for the API the https://github.com/OpenAPITools/openapi-generator[openapi-generator] could be used:
+
+[source,shell]
+....
+openapi-generator-cli generate \
+  -i api-spec.yaml \
+  -g typescript \
+  -o typescript \
+  -c config.json
+....
+
+== Operations
+
+Everything to do with running the backend experiments is defined in `operations/`.
+The `container-images/` folder contains all information on how executable artifacts are defined and built.
+The `deployment/` folder contains all information on how executable artifacts are deployed.
+
+=== Container Images
+
+Defines one image per experiment.
+
+=== Deployment
+
+==== Docker for Developing
+
+To implement a new experiment access to a PostgreSQL database is helpful.
+For this use case the `docker-compose.yaml` is convenient as it exposes the following on localhost:
+
+* a PostgreSQL database
+* an Adminer instance
+
+Check the `docker-compose.yaml` for the ports.
+
+To deploy it execute:
+
+  docker-compose up ./operations/deployment/docker-compose.yaml
+
+To access the db you can navigate to:
+  
+  http://localhost:4002/?pgsql=database&username=user&db=experiments&ns=public
+
+Use the credentials defined in `database.env` to log in.
+
+==== Kubernetes
+
+You can use https://minikube.sigs.k8s.io/docs/[minikube] to deploy everything locally.
+You can install it by following https://minikube.sigs.k8s.io/docs/start/[these instructions].
+
+To start minikube execute:
+
+  minikube start
+
+To access the dashboard of your local Kubernetes cluster execute:
+
+  minikube dashboard
+
+To deploy everything navigate to `operations/deployment/` and execute:
+
+  kustomize build . | kubectl apply -f -
+
+To access the database execute the following command and navigate to the displayed port on localhost:
+
+  minikube service adminer --url
+
+==== Helpful Commands to Interact with the Kubernetes Cluster
+
+To access any service execute the following command and navigate to the displayed port on localhost:
+
+  minikube service <service> --url
+
+To decode a secret with <name> and <path> execute:
+
+  kubectl get secret <name> --output="jsonpath=<path>" | base64 --decode
+
+== Backend Experiments
+
+=== Deno
+
+This chapter assumes the working directory to be `/deno`.
+
+https://deno.land/[Deno] is a simple, modern and secure runtime for JavaScript, TypeScript, and WebAssembly that uses V8 and is built in Rust.
+
+==== Installation
+
+See https://deno.land/#installation[here]. For Mac/Linux:
+
+  curl -fsSL https://deno.land/install.sh | sh
+
+To automatically restart the application when a file changes install https://deno.land/x/denon@2.4.9[Denon]
+
+  deno install -qAf --unstable https://deno.land/x/denon/denon.ts
+
+Use the `denon` instead of the `deno` command to use it.
+
+==== Execution
+
+Make sure you have the following environment variables set (*Note*: they have to match what is used for the database service):
+
+  DB_HOST=database
+  DB_PORT=5432
+  DB_NAME=experiments
+  DB_USER=user
+  DB_PASSWORD=user123
+
+You can set them by running:
+
+  export $(cat /operations/deployment/database.env | xargs)
+
+Once the environment variables are setup you can execute the applicatino with:
+
+  deno run --allow-net --allow-env application.ts --port 8000
+
+==== Testing
+
+There is a minimal test suite which verifies that the endpoints work as defined in the spec.
+To run the test suite the application has to be running.
+You can execute the tests with:
+
+  deno test --allow-net -- --baseUrl 'http://localhost:8000/petstore'
+
+==== Debugging
+
+Execute this command if you want to stop execution at the first line:
+
+  deno run --allow-net --allow-env --inspect-brk application.ts --port 8000
+
+or if you do not want to stop execution at the first line
+
+  deno run --allow-net --allow-env --inspect application.ts --port 8000
+
+and navigate to:
+
+  chrome://inspect
+
+==== Building
+
+NOTE: because of how the docker build context works, you have to execute the build from within ch.resrc.backend-experiments/deno
+
+Execute (docker can be used instead of podman):
+
+  podman build -t registry.resrc.ch/backend-experiments/deno:latest -f ../operations/container-images/deno/Containerfile .
+
+=== Go
+
+This chapter assumes the working directory to be `/go`.
+
+https://go.dev/[Go] is an open source programming language supported by Google.
+
+==== Installation
+
+See https://go.dev/doc/install[here].
+
+==== Execution
+
+=== Kotlin
+
+This chapter assumes the working directory to be `/kotlin`.
+
+https://kotlinlang.org/[Kotlin] is a modern programming language that makes developers happier.
+
+==== Installation
+
+See https://quarkus.io/guides/kotlin[here].
+
+==== Execution

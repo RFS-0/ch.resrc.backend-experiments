@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  database:
+    container_name: database_dev
+    image: postgres:14.2-alpine3.15
+    restart: unless-stopped
+    env_file:
+      - database.env
+    volumes:
+      - $PWD/init_database.sql:/docker-entrypoint-initdb.d/init_database.sql
+    ports:
+      - target: 5432
+        published: 5432
+    networks:
+      - application_services
+
+  adminer:
+    container_name: adminer_dev
+    image: adminer:4.8.1
+    restart: unless-stopped
+    ports:
+      - target: 8080
+        published: 4002
+    networks:
+      - application_services
+
+  deno:
+    container_name: deno
+    image: registry.resrc.ch/backend-experiments/deno:latest 
+    restart: unless-stopped
+    env_file:
+      - application.env
+    ports:
+      - target: 8000
+        published: 8000
+    networks:
+      - application_services
+
+
+networks:
+  application_services:
+    name: application_services
+    external: false
+    attachable: true
+    driver: overlay
